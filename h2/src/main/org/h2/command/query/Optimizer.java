@@ -13,6 +13,7 @@ import org.h2.table.Plan;
 import org.h2.table.PlanItem;
 import org.h2.table.TableFilter;
 import org.h2.util.Permutations;
+import org.h2.command.query.RuleBasedJoinOrderPicker;
 
 /**
  * The optimizer is responsible to find the best execution plan
@@ -82,7 +83,9 @@ class Optimizer {
         } else {
             startNs = System.nanoTime();
             if (filters.length <= MAX_BRUTE_FORCE_FILTERS) {
-                calculateBruteForceAll(isSelectCommand);
+                RuleBasedJoinOrderPicker ruleBasedJoinOrderPicker = new RuleBasedJoinOrderPicker(session, filters);
+                TableFilter[] ruleBasedResult = ruleBasedJoinOrderPicker.bestOrder();
+                testPlan(ruleBasedResult, isSelectCommand);
             } else {
                 calculateBruteForceSome(isSelectCommand);
                 random = new Random(0);
@@ -110,10 +113,6 @@ class Optimizer {
 
         p.next();
         testPlan(list, isSelectCommand);
-
-//        for (int x = 0; !canStop(x) && p.next(); x++) {
-//            testPlan(list, isSelectCommand);
-//        }
     }
 
     private void calculateBruteForceSome(boolean isSelectCommand) {
